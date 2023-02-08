@@ -6,6 +6,7 @@ from models import Base
 from client import TelegramClient
 from telebot import TeleBot, types
 from telegram_bot_calendar import DetailedTelegramCalendar
+from telebot.apihelper import ApiTelegramException
 from crud import create_task, update_task, view_tasks, delete_task, create_user
 from loader import _, bot, i18n, logger, TOKEN, ADMIN_CHAT_ID, NOTIFICATION_FREQUENCY
 
@@ -376,7 +377,11 @@ def send_notification() -> None:
     send_list = get_send_list()
     logger.info(f"Starting mailing. Found {len(send_list)} relevant users")
     for user, user_tasks in send_list.items():
-        bot.send_message(user, user_tasks)
+        try:
+            bot.send_message(user, user_tasks)
+        except ApiTelegramException as e:
+            if e.description == "Forbidden: bot was blocked by the user":
+                logger.error(f"Attention! User {user} has blocked the bot.")
         logger.info(f"Notification successfully sent to {user}")
 
 
